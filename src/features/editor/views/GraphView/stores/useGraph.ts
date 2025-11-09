@@ -43,6 +43,7 @@ interface GraphActions {
   centerView: () => void;
   clearGraph: () => void;
   setZoomFactor: (zoomFactor: number) => void;
+  updateNode: (nodeData: NodeData) => void;
 }
 
 const useGraph = create<Graph & GraphActions>((set, get) => ({
@@ -101,6 +102,27 @@ const useGraph = create<Graph & GraphActions>((set, get) => ({
   },
   toggleFullscreen: fullscreen => set({ fullscreen }),
   setViewPort: viewPort => set({ viewPort }),
+
+  updateNode: (nodeData: NodeData) => {
+    set(state => {
+      const nodes = state.nodes.map(n => (n.id === nodeData.id ? nodeData : n));
+      const json = JSON.parse(useJson.getState().json);
+      const path = nodeData.path ?? [];
+      let current = json;
+      path.forEach((key, index) => {
+        if (index === path.length - 1) {
+          current[key] = nodeData.text.reduce((acc, row) => {
+            if (row.key) acc[row.key] = row.value;
+            return acc;
+          }, {});
+        } else {
+          current = current[key];
+        }
+      });
+      useJson.setState({ json: JSON.stringify(json, null, 2) });
+      return { nodes, selectedNode: nodeData };
+    });
+  },
 }));
 
 export default useGraph;
